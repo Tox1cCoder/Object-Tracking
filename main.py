@@ -55,6 +55,7 @@ def objectTrackingVideo():
         cap = cv2.VideoCapture(vid)
         _, image = cap.read()
         h, w = image.shape[:2]
+
         tracker = EuclideanDistTracker()
         object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
 
@@ -63,59 +64,50 @@ def objectTrackingVideo():
 
         while True:
             ret, frame = cap.read()
-            height, width, _ = frame.shape
-            # Extract Region of interest
-            roi = frame[340: 720, 500: 800]
+            if ret == True:
+                height, width, _ = frame.shape
+                #roi = frame[340: 720, 500: 800]
+                roi = frame[:,:]
 
-            # 1. Object Detection
-            mask = object_detector.apply(roi)
-            _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
-            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            detections = []
-            for cnt in contours:
-                # Calculate area and remove small elements
-                area = cv2.contourArea(cnt)
-                if area > 100:
-                    # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
-                    x, y, w, h = cv2.boundingRect(cnt)
+                mask = object_detector.apply(roi)
+                _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
+                contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                detections = []
+                for cnt in contours:
+                    area = cv2.contourArea(cnt)
+                    if area > 100:
+                        #cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
+                        x, y, w, h = cv2.boundingRect(cnt)
+                        detections.append([x, y, w, h])
 
-                    detections.append([x, y, w, h])
+                boxes_ids = tracker.update(detections)
+                for box_id in boxes_ids:
+                    x, y, w, h, id = box_id
+                    #cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+                    cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
-            # 2. Object Tracking
-            boxes_ids = tracker.update(detections)
-            for box_id in boxes_ids:
-                x, y, w, h, id = box_id
-                cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
-                cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
-
-            # cv2.imshow("roi", roi)
-            # cv2.imshow("Frame", frame)
-            # cv2.imshow("Mask", mask)
-
-            out.write(frame)
-
-            if ord("q") == cv2.waitKey(1):
+                out.write(frame)
+            else:
                 break
 
         cap.release()
-        cv2.destroyAllWindows()
+        out.release()
+
+        st.video(open("detected_video.mp4", 'rb').read())
+        st.write("Processed Video")
 
 
 def main():
-    new_title = '<p style="font-size: 42px;">Welcome to Object Detection/Tracking App!</p>'
+    new_title = '<p style="font-size: 42px;">Welcome to Object Tracking App!</p>'
     read_me_0 = st.markdown(new_title, unsafe_allow_html=True)
 
     read_me = st.markdown("""
     This project was built using Streamlit and OpenCV.
     """)
     st.sidebar.title("Select Activity")
-    choice = st.sidebar.selectbox("MODE", ("About", "Object Detection(Image)", "Object Tracking(Video)"))
+    choice = st.sidebar.selectbox("Menu", ("About", "Object Tracking In Video"))
 
-    if choice == "Object Detection(Image)":
-        read_me_0.empty()
-        read_me.empty()
-        object_detection_image()
-    elif choice == "Object Tracking(Video)":
+    if choice == "Object Tracking In Video":
         read_me_0.empty()
         read_me.empty()
         objectTrackingVideo()
@@ -125,9 +117,9 @@ def main():
             st_video = open('myvideo.mp4', 'rb')
             video_bytes = st_video.read()
             st.video(video_bytes)
-            st.write("Detected Video")
-        except OSError:
-            ''
+            st.write("Processed Video")
+        except:
+            pass
 
     elif choice == "About":
         print()
