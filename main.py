@@ -13,6 +13,20 @@ from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
 
 b_boxes_deque = deque(maxlen=30)
+out_images = []
+out_maps = []
+out_titles = []
+out_boxes = []
+ystart = 400
+ystop = 656
+scale = 1.5
+color_space = 'YCrCb'
+orient = 9
+pix_per_cell = 8
+cell_per_block = 2
+hog_channel = 'ALL'
+spatial_size = (32, 32)
+hist_bins = 32
 
 
 # Define a function to return HOG features and visualization
