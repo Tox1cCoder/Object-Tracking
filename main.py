@@ -5,12 +5,15 @@ from collections import deque
 import cv2
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-import moviepy.editor as moviepy
 import numpy as np
 import streamlit as st
+import streamlit_drawable_canvas as st_canvas
 from moviepy.editor import VideoFileClip
+from scipy.ndimage import label
 from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
+
+from tracker import *
 
 b_boxes_deque = deque(maxlen=30)
 out_images = []
@@ -359,6 +362,40 @@ def find_cars(img, scale):
     return img_boxes
 
 
+def add_heat(heatmap, bbox_list):
+    # Iterate through list of bboxes
+    for box in bbox_list:
+        # Add += 1 for all pixels inside each bbox
+        # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+
+    # Return updated heatmap
+    return heatmap
+
+
+def apply_threshold(heatmap, threshold):
+    # Zero out pixels below the threshold
+    heatmap[heatmap <= threshold] = 0
+    # Return thresholded map
+    return heatmap
+
+
+def draw_labeled_bboxes(img, labels):
+    # Iterate through all detected cars
+    for car_number in range(1, labels[1] + 1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+        # Draw the box on the image
+        cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+    # Return the image
+    return img
+
+
 def add_heat_video(heatmap, b_boxes_deque):
     # Iterate through list of bboxes
     for bbox_list in b_boxes_deque:
@@ -389,8 +426,8 @@ def process_image(img):
     return draw_img
 
 
-def objectTrackingVideo():
-    st.title("Object Tracking in Video")
+def objectTrackingWithClassifier():
+    st.title("Object Detection and Tracking in Video With Classifier")
     st.subheader("""
     This object tracking project takes in a video and outputs the video with bounding boxes created around the objects in the video.
     """)
@@ -406,12 +443,100 @@ def objectTrackingVideo():
         st.write("Uploaded Video")
 
         proj_output = 'project_video_output.mp4'
-        clip = VideoFileClip(uploaded_video.name + '.mp4')
+        clip = VideoFileClip(uploaded_video.name)
         output_clip = clip.fl_image(process_image)
-        output_clip.write_videofile(proj_output, audio=False, threads=8, fps=24)
+        output_clip.write_videofile(proj_output, audio=False, threads=12, fps=24)
 
         st.video(open("project_video_output.mp4", 'rb').read())
         st.write("Processed Video")
+
+
+def draw_bbox(img):
+    # Draw the image on the canvas
+    canvas = st_canvas(
+        fill_color="rgba(255, 165, 0, 0.3)",  # Orange with 30% opacity
+        stroke_width=2,
+        stroke_color="orange",
+        background_color="#fff",
+        height=img.shape[0],
+        width=img.shape[1],
+        drawing_mode="freedraw",
+        key="canvas",
+    )
+
+    # Convert the canvas to an image
+    mask = canvas.image_data.astype("uint8")
+
+    # Extract the bounding box coordinates from the mask
+    coords = cv2.boundingRect(mask[:, :, 0])
+
+    # Draw the bounding box on the image
+    x, y, w, h = coords
+    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    # Display the image with the bounding box
+    st.image(img, channels="BGR")
+
+
+def objectTracking():
+    st.title("Object Tracking in Video")
+    st.subheader("""
+    This object tracking project takes in a video and outputs the video with bounding boxes created around the objects in the video.
+    """)
+    tracker = EuclideanDistTracker()
+    # Upload an image file
+    uploaded_video = st.file_uploader("Upload Video", type=['mp4', 'mpeg', 'mov'])
+
+    if uploaded_video != None:
+        # Read the image file
+        img = cv2.imdecode(np.frombuffer(uploaded_video.read(), np.uint8), 1)
+
+        # Display the image with the bounding box drawn by the user
+        draw_bbox(img)
+
+        cap = cv2.VideoCapture(uploaded_video)
+
+        # Object detection from Stable camera
+        object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
+
+        while True:
+            ret, frame = cap.read()
+            height, width, _ = frame.shape
+
+            # Extract Region of interest
+            roi = frame[340: 720, 500: 800]
+
+            # 1. Object Detection
+            mask = object_detector.apply(roi)
+            _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
+            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            detections = []
+            for cnt in contours:
+                # Calculate area and remove small elements
+                area = cv2.contourArea(cnt)
+                if area > 100:
+                    # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
+                    x, y, w, h = cv2.boundingRect(cnt)
+
+                    detections.append([x, y, w, h])
+
+            # 2. Object Tracking
+            boxes_ids = tracker.update(detections)
+            for box_id in boxes_ids:
+                x, y, w, h, id = box_id
+                cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+                cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+            cv2.imshow("roi", roi)
+            cv2.imshow("Frame", frame)
+            cv2.imshow("Mask", mask)
+
+            key = cv2.waitKey(30)
+            if key == 27:
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
 
 
 def main():
@@ -422,21 +547,27 @@ def main():
     This project was built using Streamlit and OpenCV.
     """)
     st.sidebar.title("Select Activity")
-    choice = st.sidebar.selectbox("Menu", ("About", "Object Tracking In Video"))
+    choice = st.sidebar.selectbox("Menu",
+                                  ("About", "Object Tracking In Video", "Object Tracking In Video With Classifier"))
 
-    if choice == "Object Tracking In Video":
+    if choice == "Object Tracking In Video With Classifier":
         read_me_0.empty()
         read_me.empty()
-        objectTrackingVideo()
-        try:
-            clip = moviepy.VideoFileClip('detected_video.mp4')
-            clip.write_videofile("myvideo.mp4")
-            st_video = open('myvideo.mp4', 'rb')
-            video_bytes = st_video.read()
-            st.video(video_bytes)
-            st.write("Processed Video")
-        except:
-            pass
+        objectTrackingWithClassifier()
+        # try:
+        #     clip = moviepy.VideoFileClip('detected_video.mp4')
+        #     clip.write_videofile("myvideo.mp4")
+        #     st_video = open('myvideo.mp4', 'rb')
+        #     video_bytes = st_video.read()
+        #     st.video(video_bytes)
+        #     st.write("Processed Video")
+        # except:
+        #     pass
+
+    elif choice == "Object Tracking In Video":
+        read_me_0.empty()
+        read_me.empty()
+        objectTracking()
 
     elif choice == "About":
         print()
