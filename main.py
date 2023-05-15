@@ -489,54 +489,47 @@ def objectTracking():
 
     if uploaded_video != None:
         # Read the image file
-        img = cv2.imdecode(np.frombuffer(uploaded_video.read(), np.uint8), 1)
+        with open("video.mp4", "wb") as f:
+            f.write(uploaded_video.getbuffer())
+        st.video(uploaded_video)
 
-        # Display the image with the bounding box drawn by the user
-        draw_bbox(img)
+        cap = cv2.VideoCapture("video.mp4")
+                    
+        fourcc = cv2.VideoWriter_fourcc(*'H264')
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
 
-        cap = cv2.VideoCapture(uploaded_video)
-
-        # Object detection from Stable camera
-        object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
-
-        while True:
-            ret, frame = cap.read()
-            height, width, _ = frame.shape
-
-            # Extract Region of interest
-            roi = frame[340: 720, 500: 800]
-
-            # 1. Object Detection
-            mask = object_detector.apply(roi)
-            _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
-            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            detections = []
-            for cnt in contours:
-                # Calculate area and remove small elements
-                area = cv2.contourArea(cnt)
-                if area > 100:
-                    # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
-                    x, y, w, h = cv2.boundingRect(cnt)
-
-                    detections.append([x, y, w, h])
-
-            # 2. Object Tracking
-            boxes_ids = tracker.update(detections)
-            for box_id in boxes_ids:
-                x, y, w, h, id = box_id
-                cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
-                cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
-
-            cv2.imshow("roi", roi)
-            cv2.imshow("Frame", frame)
-            cv2.imshow("Mask", mask)
-
-            key = cv2.waitKey(30)
-            if key == 27:
-                break
-
-        cap.release()
+        ret, frame = cap.read()
+        # frame = cv2.resizeWindow(frame, (800,600))
+        x, y, w, h = cv2.selectROI(frame)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         cv2.destroyAllWindows()
+        tracker = cv2.TrackerCSRT_create()
+        bbox = (x, y, w, h)
+        tracker.init(frame, bbox)
+        with st.spinner('Wait for it...'):
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                success, bbox = tracker.update(frame)
+                if success:
+                    x, y, w, h = [int(i) for i in bbox]
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                
+                out.write(frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        st.success('Done!')
+        
+        out.release()
+        cap.release()
+        video = open('out.mp4', 'rb')
+        video_bytes = video.read()
+        st.video(video_bytes)
 
 
 def main():
