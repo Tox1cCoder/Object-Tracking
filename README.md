@@ -8,7 +8,7 @@ The non-deep learning approach in this application follows the following steps:
 2. Classification: A trained SVM model is used to classify the extracted features into vehicle and non-vehicle categories.
 3. Tracking: The Euclidean distance is employed to track the detected vehicles across frames.
 4. Object Localization: The Kalman filter is applied to estimate and localize the tracked vehicles in the video.
-5. 
+
 ## Deep Learning Approach
 The deep learning approach in this application uses YOLOv8, a state-of-the-art object detection algorithm. The following steps outline the process:
 
