@@ -1,6 +1,7 @@
-import moviepy.editor as moviepy
-import os
 from pathlib import Path
+import os
+import joblib
+from sklearn import svm
 
 import moviepy.editor as moviepy
 import streamlit as st
@@ -9,7 +10,7 @@ import helper
 import settings
 from tracker import *
 
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 st.set_page_config(
     page_title="Object Detection And Tracking",
@@ -57,14 +58,28 @@ def objectTrackingVideo():
         fourcc = cv2.VideoWriter_fourcc(*'H264')
         out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
 
-        tracker = EuclideanDistTracker()
+        model = joblib.load('object/svm.pkl')
+        tracker = EuclideanDistTracker(model)
         object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
 
         _, frame = cap.read()
+
+        # canvas_result = st_canvas(
+        #     fill_color="rgba(255, 165, 0, 0.3)",  # Orange with opacity
+        #     stroke_width=2,
+        #     stroke_color="#FFA500",
+        #     background_color="#000000",
+        #     update_streamlit=True,
+        #     height=frame.shape[0],
+        #     width=frame.shape[1],
+        #     drawing_mode="RECTANGLE",
+        #     key="canvas",
+        # )
+
         r = cv2.selectROI(frame)
         cv2.destroyAllWindows()
 
-        with st.spinner('Wait for it...'):
+        with st.spinner('Please wait...'):
             while True:
                 ret, frame = cap.read()
                 if ret:
@@ -74,20 +89,20 @@ def objectTrackingVideo():
                     mask = object_detector.apply(roi)
                     _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
                     contours, _ = cv2.findContours(mask, cv2.RETR_TREE,
-                                                   cv2.CHAIN_APPROX_SIMPLE)  # Slide ham findContours
+                                                   cv2.CHAIN_APPROX_SIMPLE)
                     detections = []
                     for cnt in contours:
-                        area = cv2.contourArea(cnt)  # Slide ham contourArea
+                        area = cv2.contourArea(cnt)
                         if area > 100:
-                            cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)  # Slide ham drawContours
+                            cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
                             x, y, w, h = cv2.boundingRect(cnt)
                             detections.append([x, y, w, h])
 
-                    boxes_ids = tracker.update(detections)
+                    boxes_ids = tracker.update(detections, frame)
                     for box_id in boxes_ids:
                         x, y, w, h, id = box_id
-                        cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
-                        cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
+                        # cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+                        # cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
                     out.write(frame)
                 else:
