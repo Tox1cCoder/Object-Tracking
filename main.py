@@ -1,8 +1,7 @@
-from pathlib import Path
 import os
-import joblib
-from sklearn import svm
+from pathlib import Path
 
+import joblib
 import moviepy.editor as moviepy
 import streamlit as st
 
@@ -23,7 +22,7 @@ def objectTrackingVideoYOLO():
     st.title("Object Tracking in Video With YOLOv8")
     st.subheader("""
     The deep learning approach in this application uses YOLOv8, a state-of-the-art object detection algorithm. The following steps outline the process:
-    
+
     1. Pre-Trained Model: The YOLOv8 pre-trained model is utilized as a starting point for object detection.
     2. Custom Dataset: A custom dataset is created, consisting of annotated images or videos specifically focused on vehicle tracking.
     3. Retraining: The pre-trained YOLOv8 model is fine-tuned and retrained on the custom dataset to improve its accuracy and performance.
@@ -47,7 +46,7 @@ def objectTrackingVideo():
     st.title("Object Tracking in Video (Non-Deep Learning Approach)")
     st.subheader("""
     The non-deep learning approach in this application follows the following steps:
-    
+
     1. Feature Extraction: The HOG algorithm is used to extract features from the video frames.
     2. Classification: A trained SVM model is used to classify the extracted features into vehicle and non-vehicle categories.
     3. Tracking: The Euclidean distance is employed to track the detected vehicles across frames.
@@ -93,15 +92,15 @@ def objectTrackingVideo():
                     for cnt in contours:
                         area = cv2.contourArea(cnt)
                         if area > 100:
-                            cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
+                            # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
                             x, y, w, h = cv2.boundingRect(cnt)
                             detections.append([x, y, w, h])
 
                     boxes_ids = tracker.update(detections, frame)
                     for box_id in boxes_ids:
                         x, y, w, h, id = box_id
-                        # cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
-                        # cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
+                        cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+                        cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
                     out.write(frame)
                 else:
@@ -123,7 +122,8 @@ def main():
     This Streamlit application is designed to track vehicles in a video using two approaches: non-deep learning and deep learning.
     """)
     st.sidebar.title("Select Activity")
-    choice = st.sidebar.selectbox("Menu", ("About", "Object Tracking In Video (Non-Deep Learning Approach)", "Object Tracking In Video With YOLOv8"))
+    choice = st.sidebar.selectbox("Menu", (
+        "About", "Object Tracking In Video (Non-Deep Learning Approach)", "Object Tracking In Video With YOLOv8"))
 
     if choice == "Object Tracking In Video (Non-Deep Learning Approach)":
         read_me_0.empty()
