@@ -31,16 +31,26 @@ def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=N
     Returns:
     None
     """
+    #   0: person
+    #   1: bicycle
+    #   2: car
+    #   3: motorcycle
+    #   4: airplane
+    #   5: bus
+    #   6: train
+    #   7: truck
 
     image = cv2.resize(image, (720, int(720 * (9 / 16))))
 
     if is_display_tracking:
-        res = model.track(image, conf=conf, persist=True, tracker=tracker)
+        res = model.track(image, conf=conf, persist=True, tracker=tracker, stream=True, classes=[0,2,7])
     else:
-        res = model.predict(image, conf=conf)
+        res = model.predict(image, conf=conf, stream=True, classes=[0,2,7])
 
+    res = list(res)
     res_plotted = res[0].plot()
     st_frame.image(res_plotted, caption='Detected Video', channels="BGR", use_column_width=True)
+    return res_plotted
 
 
 def play_video(conf, model):
@@ -52,17 +62,34 @@ def play_video(conf, model):
         with open("video.mp4", "wb") as video_file:
             video_file.write(uploaded_video.getbuffer())
         st.video(uploaded_video)
-
+        
         if st.sidebar.button('Detect Video Objects'):
             try:
                 vid_cap = cv2.VideoCapture("video.mp4")
+                fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                width = 720
+                height = 405
+                fourcc = cv2.VideoWriter_fourcc('h', '2', '6', '4')
+                out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
                 st_frame = st.empty()
-                while vid_cap.isOpened():
-                    success, image = vid_cap.read()
-                    if success:
-                        _display_detected_frames(conf, model, st_frame, image, is_display_tracker, tracker)
-                    else:
-                        vid_cap.release()
-                        break
+                with st.spinner('Please wait...'):
+                    stop_flag = False
+                    stop_button = st.button('Stop')
+                    while vid_cap.isOpened() and not stop_flag:
+                        success, image = vid_cap.read()
+                        if success:
+                            image =_display_detected_frames(conf, model, st_frame, image, is_display_tracker, tracker)
+                            out.write(image)   
+                        else:
+                            break
+                        if stop_button:
+                            stop_flag = True
+                st.success('Done!')
+                out.release()
+                vid_cap.release()
+                video = open('out.mp4', 'rb')
+                video_bytes = video.read()
+                st_frame.video(video_bytes)
             except Exception as e:
-                st.sidebar.error("Error loading video: " + str(e))
+                st.sidebar.error("Error: " + str(e))
+            
