@@ -71,9 +71,10 @@ def play_video(conf, model):
                 height = 405
                 fourcc = cv2.VideoWriter_fourcc('h', '2', '6', '4')
                 out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
-                st_frame = st.empty()
+               
                 with st.spinner('Please wait...'):
                     stop_flag = False
+                    st_frame = st.empty()
                     stop_button = st.button('Stop')
                     while vid_cap.isOpened() and not stop_flag:
                         success, image = vid_cap.read()
@@ -87,9 +88,7 @@ def play_video(conf, model):
                 st.success('Done!')
                 out.release()
                 vid_cap.release()
-                video = open('out.mp4', 'rb')
-                video_bytes = video.read()
-                st_frame.video(video_bytes)
+
             except Exception as e:
                 st.sidebar.error("Error: " + str(e))
             
