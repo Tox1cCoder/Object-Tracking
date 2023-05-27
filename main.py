@@ -70,7 +70,7 @@ def objectTrackingVideo():
 
         model = joblib.load('object/svm.pkl')
         tracker = EuclideanDistTracker(model)
-        object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40,  detectShadows=False)
+        object_detector = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
 
         _, frame = cap.read()
 
@@ -85,13 +85,16 @@ def objectTrackingVideo():
                     roi = frame[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
 
                     mask = object_detector.apply(roi)
-                    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
-                    contours, _ = cv2.findContours(mask, cv2.RETR_TREE,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
+                    _, mask = cv2.threshold(mask, 250, 255, cv2.THRESH_BINARY)
+                    mask = cv2.erode(mask, None, iterations=1)
+                    mask = cv2.dilate(mask, None, iterations=2)
+
+                    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     detections = []
+
                     for cnt in contours:
                         area = cv2.contourArea(cnt)
-                        if area > 100:
+                        if area > 400:
                             # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
                             x, y, w, h = cv2.boundingRect(cnt)
                             detections.append([x, y, w, h])

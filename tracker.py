@@ -42,7 +42,7 @@ def non_max_suppression(boxes, overlap_threshold):
                 picked_indices.append(j)
 
     picked_boxes = [box for i, box in enumerate(boxes) if i not in picked_indices]
-
+    picked_boxes = boxes
     return picked_boxes
 
 
@@ -55,14 +55,12 @@ class EuclideanDistTracker:
 
     def detect_vehicle(self, img):
         img = cv2.resize(img, (64, 128))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.equalizeHist(img)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         hog = cv2.HOGDescriptor()
-        features = hog.compute(img)
-        decision_values = self.svm_model.decision_function([features])
-        threshold = 0.7 * np.max(decision_values)
-        predictions = np.where(decision_values >= threshold, 1, -1)
-        return predictions[0]
+        features = hog.compute(gray)
+        features = features.flatten().reshape(1, -1)
+        pred = self.svm_model.predict(features)
+        return pred
 
     def update(self, objects_rect, frame):
         objects_bbs_ids = []
@@ -114,4 +112,3 @@ class EuclideanDistTracker:
         }
 
         return final_objects_bbs_ids
-
