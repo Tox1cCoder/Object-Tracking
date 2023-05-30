@@ -41,7 +41,7 @@ def non_max_suppression(boxes, overlap_threshold):
             if iou < overlap_threshold:
                 picked_indices.append(j)
 
-    picked_boxes = [box for i, box in enumerate(boxes) if i not in picked_indices]
+    # picked_boxes = [box for i, box in enumerate(boxes) if i not in picked_indices]
     picked_boxes = boxes
     return picked_boxes
 

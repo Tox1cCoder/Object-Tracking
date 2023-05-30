@@ -24,9 +24,8 @@ def objectTrackingVideoYOLO():
     The deep learning approach in this application uses YOLOv8, a state-of-the-art object detection algorithm. The following steps outline the process:
 
     1. Pre-Trained Model: The YOLOv8 pre-trained model is utilized as a starting point for object detection.
-    2. Custom Dataset: A custom dataset is created, consisting of annotated images or videos specifically focused on vehicle tracking.
-    3. Retraining: The pre-trained YOLOv8 model is fine-tuned and retrained on the custom dataset to improve its accuracy and performance.
-    4. Object Detection: The retrained YOLOv8 model is then used for vehicle detection in the input video.
+    2. Tracker: Using a Bytetrack or BOTSort tracker with high accuracy and performance
+    3. Object Detection: The model is then used for vehicle detection in the input video.
 
     """)
 
