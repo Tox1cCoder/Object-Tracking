@@ -67,7 +67,7 @@ def objectTrackingVideo():
         fourcc = cv2.VideoWriter_fourcc(*'H264')
         out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
 
-        model = joblib.load('object/svm.pkl')
+        model = joblib.load('./svm.pkl')
         tracker = EuclideanDistTracker(model)
         object_detector = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
 
