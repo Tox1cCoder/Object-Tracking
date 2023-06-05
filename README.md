@@ -21,4 +21,4 @@ The deep learning approach in this application uses YOLOv8, a state-of-the-art o
 To run the Object Tracking Application, follow these steps:
 
 1. Install the necessary dependencies mentioned in the requirements.txt file.
-2. Run the application by executing the command streamlit run main.py in the terminal.
+2. Run the application by executing the command `streamlit run main.py` in the terminal.
