@@ -1,4 +1,4 @@
-# Streamlit Object Tracking Application
+# Object Tracking Application
 This Streamlit application is designed to track vehicles in a video using two approaches: non-deep learning and deep learning.
 
 ## Non-Deep Learning Approach
