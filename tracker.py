@@ -1,5 +1,4 @@
 import math
-
 import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -10,6 +9,7 @@ class EuclideanDistTracker:
     def __init__(self, svm_model):
         self.tracks = []
         self.svm_model = svm_model
+        self.nms_threshold = 0.3
 
     def detect_vehicle(self, img):
         img = cv2.resize(img, (64, 128))
@@ -59,7 +59,7 @@ class EuclideanDistTracker:
             for i, track in enumerate(self.tracks):
                 if i not in row_ind:
                     track['age'] += 1
-                    if track['age'] > 10:  # Remove tracks that are not detected for a certain number of frames
+                    if track['age'] > 5:  # Remove tracks that are not detected for a certain number of frames
                         self.tracks.remove(track)
 
             # Create new tracks for unmatched detections
@@ -91,8 +91,24 @@ class EuclideanDistTracker:
                     self.tracks[i]['centroid'] = (cx, cy)
                     self.tracks[i]['age'] = 1
 
-        final_objects_bbs_ids = [[int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]), track['id']]
-                                 for track in self.tracks
-                                 for bbox in [track['bbox']]]
+        # Apply NMS to each class
+        class_ids = [track['id'] for track in self.tracks]
+        unique_class_ids = np.unique(class_ids)
+
+        final_objects_bbs_ids = []
+
+        for class_id in unique_class_ids:
+            class_tracks = [track for track in self.tracks if track['id'] == class_id]
+            class_bboxes = [track['bbox'] for track in class_tracks]
+
+            # Convert bounding boxes to NMS input format (x1, y1, x2, y2)
+            bboxes = np.array([[bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]] for bbox in class_bboxes])
+
+            # Apply NMS
+            indices = cv2.dnn.NMSBoxes(bboxes.tolist(), np.ones(len(bboxes)), score_threshold=0.5, nms_threshold=self.nms_threshold)
+
+            # Append the final bounding boxes with class IDs
+            final_objects_bbs_ids.extend([[int(bboxes[idx][0]), int(bboxes[idx][1]), int(bboxes[idx][2] - bboxes[idx][0]),
+                                           int(bboxes[idx][3] - bboxes[idx][1]), class_id] for idx in indices])
 
         return final_objects_bbs_ids
