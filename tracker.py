@@ -18,11 +18,12 @@ class EuclideanDistTracker:
         features = hog.compute(gray)
         features = features.flatten().reshape(1, -1)
         pred = self.svm_model.predict(features)
-        return pred
+        print(int(pred[0]))
+        return int(pred[0])
 
     def update(self, detections, frame):
 
-        global object_id  # Access the global object ID variable
+        global object_id
 
         if len(self.tracks) == 0:
             for det in detections:
@@ -35,12 +36,12 @@ class EuclideanDistTracker:
 
                 if is_vehicle:
                     self.tracks.append({
-                        'id': object_id,  # Assign the current object ID
+                        'id': object_id,
                         'bbox': (x, y, w, h),
                         'centroid': (cx, cy),
                         'age': 1,
                     })
-                    object_id += 1  # Increment the object ID
+                    object_id += 1
 
         else:
             # Create detection matrix
@@ -74,12 +75,12 @@ class EuclideanDistTracker:
 
                     if is_vehicle:
                         self.tracks.append({
-                            'id': object_id,  # Assign the current object ID
+                            'id': object_id,
                             'bbox': (x, y, w, h),
                             'centroid': (cx, cy),
                             'age': 1,
                         })
-                        object_id += 1  # Increment the object ID
+                        object_id += 1
 
             # Update existing tracks with matched detections
             for i, j in zip(row_ind, col_ind):

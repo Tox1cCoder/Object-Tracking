@@ -94,7 +94,7 @@ def objectTrackingVideo():
 
                     for cnt in contours:
                         area = cv2.contourArea(cnt)
-                        if area > 400:
+                        if area > 600:
                             # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
                             x, y, w, h = cv2.boundingRect(cnt)
                             detections.append([x, y, w, h])
