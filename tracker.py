@@ -6,23 +6,11 @@ from scipy.optimize import linear_sum_assignment
 object_id = 0
 
 class EuclideanDistTracker:
-    def __init__(self, svm_model):
+    def __init__(self):
         self.tracks = []
-        self.svm_model = svm_model
         self.nms_threshold = 0.3
 
-    def detect_vehicle(self, img):
-        img = cv2.resize(img, (64, 128))
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        hog = cv2.HOGDescriptor()
-        features = hog.compute(gray)
-        features = features.flatten().reshape(1, -1)
-        pred = self.svm_model.predict(features)
-        print(int(pred[0]))
-        return int(pred[0])
-
     def update(self, detections, frame):
-
         global object_id
 
         if len(self.tracks) == 0:
@@ -32,16 +20,14 @@ class EuclideanDistTracker:
                 cy = y + (h // 2)
 
                 roi = frame[y:y + h, x:x + w]
-                is_vehicle = self.detect_vehicle(roi)
 
-                if is_vehicle:
-                    self.tracks.append({
-                        'id': object_id,
-                        'bbox': (x, y, w, h),
-                        'centroid': (cx, cy),
-                        'age': 1,
-                    })
-                    object_id += 1
+                self.tracks.append({
+                    'id': object_id,
+                    'bbox': (x, y, w, h),
+                    'centroid': (cx, cy),
+                    'age': 1,
+                })
+                object_id += 1
 
         else:
             # Create detection matrix
@@ -71,16 +57,14 @@ class EuclideanDistTracker:
                     cy = y + (h // 2)
 
                     roi = frame[y:y + h, x:x + w]
-                    is_vehicle = self.detect_vehicle(roi)
 
-                    if is_vehicle:
-                        self.tracks.append({
-                            'id': object_id,
-                            'bbox': (x, y, w, h),
-                            'centroid': (cx, cy),
-                            'age': 1,
-                        })
-                        object_id += 1
+                    self.tracks.append({
+                        'id': object_id,
+                        'bbox': (x, y, w, h),
+                        'centroid': (cx, cy),
+                        'age': 1,
+                    })
+                    object_id += 1
 
             # Update existing tracks with matched detections
             for i, j in zip(row_ind, col_ind):
@@ -106,10 +90,12 @@ class EuclideanDistTracker:
             bboxes = np.array([[bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]] for bbox in class_bboxes])
 
             # Apply NMS
-            indices = cv2.dnn.NMSBoxes(bboxes.tolist(), np.ones(len(bboxes)), score_threshold=0.5, nms_threshold=self.nms_threshold)
+            indices = cv2.dnn.NMSBoxes(bboxes.tolist(), np.ones(len(bboxes)), score_threshold=0.5,
+                                       nms_threshold=self.nms_threshold)
 
             # Append the final bounding boxes with class IDs
-            final_objects_bbs_ids.extend([[int(bboxes[idx][0]), int(bboxes[idx][1]), int(bboxes[idx][2] - bboxes[idx][0]),
-                                           int(bboxes[idx][3] - bboxes[idx][1]), class_id] for idx in indices])
+            final_objects_bbs_ids.extend(
+                [[int(bboxes[idx][0]), int(bboxes[idx][1]), int(bboxes[idx][2] - bboxes[idx][0]),
+                  int(bboxes[idx][3] - bboxes[idx][1]), class_id] for idx in indices])
 
         return final_objects_bbs_ids

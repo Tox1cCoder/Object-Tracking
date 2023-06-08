@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import cv2
 import joblib
 import moviepy.editor as moviepy
 import streamlit as st
@@ -40,6 +41,14 @@ def objectTrackingVideoYOLO():
 
     helper.play_video(confidence, model)
 
+def detect_vehicle(model, img):
+    img = cv2.resize(img, (64, 128))
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    hog = cv2.HOGDescriptor()
+    feature = hog.compute(gray)
+    feature = feature.reshape(1, -1)
+    pred = model.predict(feature)
+    return int(pred[0])
 
 def objectTrackingVideo():
     st.title("Object Tracking in Video (Non-Deep Learning Approach)")
@@ -69,7 +78,7 @@ def objectTrackingVideo():
         out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
 
         model = joblib.load('main/svm.pkl')
-        tracker = EuclideanDistTracker(model)
+        tracker = EuclideanDistTracker()
         object_detector = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
 
         _, frame = cap.read()
@@ -97,9 +106,12 @@ def objectTrackingVideo():
                         if area > 600:
                             # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
                             x, y, w, h = cv2.boundingRect(cnt)
-                            detections.append([x, y, w, h])
+                            is_vehicle = detect_vehicle(model, roi[y:y + h, x:x + w])
+                            if is_vehicle:
+                                detections.append([x, y, w, h])
 
-                    boxes_ids = tracker.update(detections, frame)
+                    boxes_ids = tracker.update(detections, roi)
+
                     for box_id in boxes_ids:
                         x, y, w, h, id = box_id
                         cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
