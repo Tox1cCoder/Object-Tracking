@@ -1,11 +1,13 @@
 import math
+
 import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 object_id = 0
 
-class EuclideanDistTracker:
+
+class Tracker:
     def __init__(self):
         self.tracks = []
         self.nms_threshold = 0.3
@@ -75,6 +77,14 @@ class EuclideanDistTracker:
                     self.tracks[i]['bbox'] = (x, y, w, h)
                     self.tracks[i]['centroid'] = (cx, cy)
                     self.tracks[i]['age'] = 1
+
+        # final_objects_bbs_ids = []
+        #
+        # for track in self.tracks:
+        #     final_objects_bbs_ids.append(
+        #         [track['bbox'][0], track['bbox'][1], track['bbox'][2], track['bbox'][3], track['id']])
+        #
+        # return final_objects_bbs_ids
 
         # Apply NMS to each class
         class_ids = [track['id'] for track in self.tracks]

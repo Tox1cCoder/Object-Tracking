@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-import cv2
 import joblib
 import moviepy.editor as moviepy
 import streamlit as st
@@ -41,6 +40,7 @@ def objectTrackingVideoYOLO():
 
     helper.play_video(confidence, model)
 
+
 def detect_vehicle(model, img):
     img = cv2.resize(img, (64, 128))
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -49,6 +49,7 @@ def detect_vehicle(model, img):
     feature = feature.reshape(1, -1)
     pred = model.predict(feature)
     return int(pred[0])
+
 
 def objectTrackingVideo():
     st.title("Object Tracking in Video (Non-Deep Learning Approach)")
@@ -77,8 +78,8 @@ def objectTrackingVideo():
         fourcc = cv2.VideoWriter_fourcc(*'H264')
         out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
 
-        model = joblib.load('./svm.pkl')
-        tracker = EuclideanDistTracker()
+        model = joblib.load('main/svm.pkl')
+        tracker = Tracker()
         object_detector = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
 
         _, frame = cap.read()
