@@ -66,6 +66,7 @@ class Tracker:
                     if distance < min_distance and distance < 15:
                         min_distance = distance
                         matchingIdx = i 
+                        
             # elif preBox.time > 6:
                 #use UKF
             # print("THIS ID PREBOX================>",preBox)
@@ -81,8 +82,8 @@ class Tracker:
             if matchingIdx is not None:
                 self.currBoxes[matchingIdx].update_id(preBox.id)
                 self.currBoxes[matchingIdx].time = preBox.time + 1
-                self.currBoxes[matchingIdx].kf = preBox.kf
-                self.currBoxes[matchingIdx].kf.update(self.get_center(self.currBoxes[matchingIdx].positions))
+                # self.currBoxes[matchingIdx].kf = preBox.kf
+                # self.currBoxes[matchingIdx].kf.update(self.get_center(self.currBoxes[matchingIdx].positions))
 
 
 

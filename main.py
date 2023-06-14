@@ -37,7 +37,6 @@ def objectTrackingVideoYOLO():
     except Exception as ex:
         st.error(f"Unable to load model. Check the specified path: {model_path}")
         st.error(ex)
-
     helper.play_video(confidence, model)
 
 

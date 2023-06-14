@@ -21,7 +21,7 @@ while True:
     if frame.shape[1] > max_width or frame.shape[0] > max_height:
         frame = cv2.resize(frame, (max_width, max_height))
 
-    results = model.predict(frame, classes=[2], conf = 0.20)
+    results = model.predict(frame, classes=[2], conf = 0.25)
 
     boxes = results[0].boxes.xyxy.numpy().astype(int)
     nms_results = non_max_suppression2(boxes, iou_threshold=0.5)
