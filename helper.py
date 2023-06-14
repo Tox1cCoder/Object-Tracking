@@ -43,9 +43,9 @@ def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=N
     image = cv2.resize(image, (720, int(720 * (9 / 16))))
 
     if is_display_tracking:
-        res = model.track(image, conf=conf, persist=True, tracker=tracker, stream=True, classes=[0,2,7])
+        res = model.track(image, conf=conf, persist=True, tracker=tracker, stream=True, classes=[2, 7])
     else:
-        res = model.predict(image, conf=conf, stream=True, classes=[0,2,7])
+        res = model.predict(image, conf=conf, stream=True, classes=[2,7])
 
     res = list(res)
     res_plotted = res[0].plot()
@@ -72,9 +72,9 @@ def play_video(conf, model):
                 fourcc = cv2.VideoWriter_fourcc('h', '2', '6', '4')
                 out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
                
+                st_frame = st.empty()
                 with st.spinner('Please wait...'):
                     stop_flag = False
-                    st_frame = st.empty()
                     stop_button = st.button('Stop')
                     while vid_cap.isOpened() and not stop_flag:
                         success, image = vid_cap.read()
@@ -86,8 +86,14 @@ def play_video(conf, model):
                         if stop_button:
                             stop_flag = True
                 st.success('Done!')
+                st_frame.empty()
                 out.release()
                 vid_cap.release()
+                video = open('out.mp4', 'rb')
+                video_bytes = video.read()
+                st.video(video_bytes)
+
+
 
             except Exception as e:
                 st.sidebar.error("Error: " + str(e))
