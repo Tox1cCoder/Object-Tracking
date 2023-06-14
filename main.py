@@ -30,14 +30,13 @@ def objectTrackingVideoYOLO():
     """)
 
     st.sidebar.header("Model Config")
-    confidence = float(st.sidebar.slider("Select Model Confidence", 25, 100, 40)) / 100
+    confidence = float(st.sidebar.slider("Select Model Confidence", 10, 100, 40)) / 100
     model_path = Path(settings.DETECTION_MODEL)
     try:
         model = helper.load_model(model_path)
     except Exception as ex:
         st.error(f"Unable to load model. Check the specified path: {model_path}")
         st.error(ex)
-
     helper.play_video(confidence, model)
 
 
@@ -78,10 +77,10 @@ def objectTrackingVideo():
         fourcc = cv2.VideoWriter_fourcc(*'H264')
         out = cv2.VideoWriter('out.mp4', fourcc, fps, (width, height))
 
-        model = joblib.load('main/svm.pkl')
+        model = joblib.load('./svm.pkl')
         tracker = Tracker()
         object_detector = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
-
+        
         _, frame = cap.read()
 
         r = cv2.selectROI(frame)
