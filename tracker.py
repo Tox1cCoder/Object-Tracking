@@ -6,7 +6,6 @@ from scipy.optimize import linear_sum_assignment
 
 object_id = 0
 
-
 class Tracker:
     def __init__(self):
         self.tracks = []
@@ -76,15 +75,7 @@ class Tracker:
                     cy = y + (h // 2)
                     self.tracks[i]['bbox'] = (x, y, w, h)
                     self.tracks[i]['centroid'] = (cx, cy)
-                    self.tracks[i]['age'] = 1
-
-        # final_objects_bbs_ids = []
-        #
-        # for track in self.tracks:
-        #     final_objects_bbs_ids.append(
-        #         [track['bbox'][0], track['bbox'][1], track['bbox'][2], track['bbox'][3], track['id']])
-        #
-        # return final_objects_bbs_ids
+                    self.tracks[i]['age'] = 1  
 
         # Apply NMS to each class
         class_ids = [track['id'] for track in self.tracks]
